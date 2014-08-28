@@ -2,6 +2,64 @@
 (function() {
   var PauseStatus, RunningStatus, StopStatus, StopWatch, StopWatchView;
 
+  StopWatch = (function() {
+    function StopWatch() {}
+
+    StopWatch.prototype.setup = function(el) {
+      this.view = new StopWatchView(this, $(el));
+      this.statuses = {
+        stop: new StopStatus(this, this.view),
+        pause: new PauseStatus(this, this.view),
+        running: new RunningStatus(this, this.view)
+      };
+      return this.reset();
+    };
+
+    StopWatch.prototype.clickedMainButton = function() {
+      return this.status.clickedMainButton();
+    };
+
+    StopWatch.prototype.clickedSubButton = function() {
+      return this.status.clickedSubButton();
+    };
+
+    StopWatch.prototype.run = function() {
+      var _this = this;
+      this.changeStatus(this.statuses.running);
+      return this.timer = setInterval(function() {
+        _this.counter++;
+        return _this.view.updateDisplay();
+      }, 100);
+    };
+
+    StopWatch.prototype.pause = function() {
+      clearInterval(this.timer);
+      return this.changeStatus(this.statuses.pause);
+    };
+
+    StopWatch.prototype.reset = function() {
+      this.counter = 0;
+      this.lastLap = 0;
+      this.view.reset();
+      return this.changeStatus(this.statuses.stop);
+    };
+
+    StopWatch.prototype.lap = function() {
+      var lap;
+      lap = this.counter - this.lastLap;
+      this.lastLap = this.counter;
+      return this.view.addLap(lap);
+    };
+
+    StopWatch.prototype.changeStatus = function(next) {
+      this.status = next;
+      return this.status.onBeforeChangeStatus();
+    };
+
+    return StopWatch;
+
+  })();
+
   StopStatus = (function() {
     function StopStatus(app, view) {
       this.app = app;
@@ -67,64 +125,6 @@
     };
 
     return RunningStatus;
-
-  })();
-
-  StopWatch = (function() {
-    function StopWatch() {}
-
-    StopWatch.prototype.setup = function(el) {
-      this.view = new StopWatchView(this, $(el));
-      this.statuses = {
-        stop: new StopStatus(this, this.view),
-        pause: new PauseStatus(this, this.view),
-        running: new RunningStatus(this, this.view)
-      };
-      return this.reset();
-    };
-
-    StopWatch.prototype.clickedMainButton = function() {
-      return this.status.clickedMainButton();
-    };
-
-    StopWatch.prototype.clickedSubButton = function() {
-      return this.status.clickedSubButton();
-    };
-
-    StopWatch.prototype.run = function() {
-      var _this = this;
-      this.changeStatus(this.statuses.running);
-      return this.timer = setInterval(function() {
-        _this.counter++;
-        return _this.view.updateDisplay();
-      }, 100);
-    };
-
-    StopWatch.prototype.pause = function() {
-      clearInterval(this.timer);
-      return this.changeStatus(this.statuses.pause);
-    };
-
-    StopWatch.prototype.reset = function() {
-      this.counter = 0;
-      this.lastLap = 0;
-      this.view.reset();
-      return this.changeStatus(this.statuses.stop);
-    };
-
-    StopWatch.prototype.lap = function() {
-      var lap;
-      lap = this.counter - this.lastLap;
-      this.lastLap = this.counter;
-      return this.view.addLap(lap);
-    };
-
-    StopWatch.prototype.changeStatus = function(next) {
-      this.status = next;
-      return this.status.onBeforeChangeStatus();
-    };
-
-    return StopWatch;
 
   })();
 

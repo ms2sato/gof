@@ -1,66 +1,22 @@
-class StopStatus
-
-  constructor: (@app, @view)->
-
-  onBeforeChangeStatus: ()->
-    @view.updateDisplay()
-    @view.decorateRunButton 'main'
-    @view.decorateDisabledLapButton 'sub'
-
-  clickedMainButton: ()->
-    @app.run()
-
-  clickedSubButton: ()->
-    # nop
-
-class PauseStatus
-
-  constructor: (@app, @view)->
-
-  onBeforeChangeStatus: ()->
-    @view.decorateRunButton 'main'
-    @view.decorateResetButton 'sub'
-
-  clickedMainButton: ()->
-    @app.run()
-
-  clickedSubButton: ()->
-    @app.reset()
-
-class RunningStatus
-
-  constructor: (@app, @view)->
-
-  onBeforeChangeStatus: ()->
-    @view.decorateStopButton 'main'
-    @view.decorateLapButton 'sub'
-
-  clickedMainButton: ()->
-    @app.pause()
-
-  clickedSubButton: ()->
-    @app.lap()
-
-
 class StopWatch
 
   setup: (el)->
     @view = new StopWatchView(@, $(el))
 
     @statuses =
-      stop : new StopStatus(@, @view)
-      pause : new PauseStatus(@, @view)
-      running : new RunningStatus(@, @view)
+      stop: new StopStatus(@, @view)
+      pause: new PauseStatus(@, @view)
+      running: new RunningStatus(@, @view)
 
     @reset()
 
-  clickedMainButton: ()->
+  clickedMainButton: ->
     @status.clickedMainButton()
 
-  clickedSubButton: ()->
+  clickedSubButton: ->
     @status.clickedSubButton()
 
-  run: ()->
+  run: ->
     @changeStatus(@statuses.running)
 
     @timer = setInterval ()=>
@@ -69,17 +25,17 @@ class StopWatch
     ,
       100
 
-  pause: ()->
+  pause: ->
     clearInterval(@timer)
     @changeStatus(@statuses.pause)
 
-  reset: ()->
+  reset: ->
     @counter = 0
     @lastLap = 0
     @view.reset()
     @changeStatus(@statuses.stop)
 
-  lap: ()->
+  lap: ->
     lap = @counter - @lastLap
     @lastLap = @counter
     @view.addLap(lap)
@@ -87,6 +43,49 @@ class StopWatch
   changeStatus: (next)->
     @status = next
     @status.onBeforeChangeStatus()
+
+class StopStatus
+
+  constructor: (@app, @view)->
+
+  onBeforeChangeStatus: ->
+    @view.updateDisplay()
+    @view.decorateRunButton 'main'
+    @view.decorateDisabledLapButton 'sub'
+
+  clickedMainButton: ->
+    @app.run()
+
+  clickedSubButton: ->
+    # nop
+
+class PauseStatus
+
+  constructor: (@app, @view)->
+
+  onBeforeChangeStatus: ->
+    @view.decorateRunButton 'main'
+    @view.decorateResetButton 'sub'
+
+  clickedMainButton: ->
+    @app.run()
+
+  clickedSubButton: ->
+    @app.reset()
+
+class RunningStatus
+
+  constructor: (@app, @view)->
+
+  onBeforeChangeStatus: ->
+    @view.decorateStopButton 'main'
+    @view.decorateLapButton 'sub'
+
+  clickedMainButton: ->
+    @app.pause()
+
+  clickedSubButton: ->
+    @app.lap()
 
 
 class StopWatchView
@@ -120,16 +119,16 @@ class StopWatchView
   decorateDisabledLapButton: (name)->
     @getButton(name).text('lap').attr('disabled', true)
 
-  updateDisplay: ()->
+  updateDisplay: ->
     @$('.display').text(@app.counter)
 
   addLap: (lap)->
     $("<li>#{lap}</li>").prependTo(@$('.laps'))
 
-  clearLaps: ()->
+  clearLaps: ->
     @$('.laps').empty()
 
-  reset: ()->
+  reset: ->
     @updateDisplay()
     @clearLaps()
 
