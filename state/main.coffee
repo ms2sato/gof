@@ -3,11 +3,12 @@ class StopStatus
   constructor: (@app, @view)->
 
   onBeforeChangeStatus: ()->
-    @view.decoratePlayButton 0
-    @view.decorateDisabledLapButton 1
+    @view.updateDisplay()
+    @view.decorateRunButton 'main'
+    @view.decorateDisabledLapButton 'sub'
 
   clickedMainButton: ()->
-    @app.start()
+    @app.run()
 
   clickedSubButton: ()->
     # nop
@@ -17,22 +18,22 @@ class PauseStatus
   constructor: (@app, @view)->
 
   onBeforeChangeStatus: ()->
-    @view.decoratePlayButton 0
-    @view.decorateResetButton 1
+    @view.decorateRunButton 'main'
+    @view.decorateResetButton 'sub'
 
   clickedMainButton: ()->
-    @app.start()
+    @app.run()
 
   clickedSubButton: ()->
     @app.reset()
 
-class PlayingStatus
+class RunningStatus
 
   constructor: (@app, @view)->
 
   onBeforeChangeStatus: ()->
-    @view.decorateStopButton 0
-    @view.decorateLapButton 1
+    @view.decorateStopButton 'main'
+    @view.decorateLapButton 'sub'
 
   clickedMainButton: ()->
     @app.pause()
@@ -43,19 +44,15 @@ class PlayingStatus
 
 class StopWatch
 
-  constructor: ()->
-    @counter = 0
-    @lastLap = 0
-
   setup: (el)->
     @view = new StopWatchView(@, $(el))
 
     @statuses =
       stop : new StopStatus(@, @view)
       pause : new PauseStatus(@, @view)
-      playing : new PlayingStatus(@, @view)
+      running : new RunningStatus(@, @view)
 
-    @changeStatus @statuses.stop
+    @reset()
 
   clickedMainButton: ()->
     @status.clickedMainButton()
@@ -63,8 +60,8 @@ class StopWatch
   clickedSubButton: ()->
     @status.clickedSubButton()
 
-  start: ()->
-    @changeStatus(@statuses.playing)
+  run: ()->
+    @changeStatus(@statuses.running)
 
     @timer = setInterval ()=>
       @counter++
@@ -78,6 +75,7 @@ class StopWatch
 
   reset: ()->
     @counter = 0
+    @lastLap = 0
     @view.reset()
     @changeStatus(@statuses.stop)
 
@@ -104,23 +102,23 @@ class StopWatchView
   $: (options)->
     @$el.find(options)
 
-  getButton: (index)->
-    @$(".buttons li:eq(#{index}) button")
+  getButton: (name)->
+    @$(".buttons button.#{name}")
 
-  decoratePlayButton: (index)->
-    @getButton(index).text('play').removeAttr('disabled')
+  decorateRunButton: (name)->
+    @getButton(name).text('run').removeAttr('disabled')
 
-  decorateStopButton: (index)->
-    @getButton(index).text('stop').removeAttr('disabled')
+  decorateStopButton: (name)->
+    @getButton(name).text('stop').removeAttr('disabled')
 
-  decorateResetButton: (index)->
-    @getButton(index).text('reset').removeAttr('disabled')
+  decorateResetButton: (name)->
+    @getButton(name).text('reset').removeAttr('disabled')
 
-  decorateLapButton: (index)->
-    @getButton(index).text('lap').removeAttr('disabled')
+  decorateLapButton: (name)->
+    @getButton(name).text('lap').removeAttr('disabled')
 
-  decorateDisabledLapButton: (index)->
-    @getButton(index).text('lap').attr('disabled', true)
+  decorateDisabledLapButton: (name)->
+    @getButton(name).text('lap').attr('disabled', true)
 
   updateDisplay: ()->
     @$('.display').text(@app.counter)
