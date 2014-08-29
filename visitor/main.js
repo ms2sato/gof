@@ -56,15 +56,19 @@
       this.nodes = [];
     }
 
+    CompositeNode.prototype.forEach = function(callback) {
+      return this.nodes.forEach(callback);
+    };
+
     CompositeNode.prototype.accept = function(visitor, options) {
-      return this.nodes.forEach(function(node) {
+      return this.forEach(function(node) {
         return visitor.visit(node, options);
       });
     };
 
     CompositeNode.prototype.setBackgroundColor = function(color) {
       CompositeNode.__super__.setBackgroundColor.call(this, color);
-      return this.nodes.forEach(function(node) {
+      return this.forEach(function(node) {
         return node.setBackgroundColor(color);
       });
     };
@@ -74,9 +78,9 @@
         _this = this;
       this.$parent = $parent;
       this.$el = $(compositeNodeTemplate).appendTo(this.$parent);
-      this.nodes.forEach(function(node) {
+      this.forEach(function(node) {
         var $li;
-        $li = $('<li></li>').appendTo(_this.$el.find('ul'));
+        $li = $('<li></li>').appendTo(_this.$el.find('>ul'));
         return node.setup($li);
       });
       editor = new NodeEditor(this);
@@ -96,6 +100,13 @@
 
     BasicVisitor.prototype.visit = function(obj, options) {
       return this['visit' + obj.constructor.name](obj, options);
+    };
+
+    BasicVisitor.prototype.visitCompositeNode = function(compositeNode, options) {
+      var _this = this;
+      return compositeNode.forEach(function(node) {
+        return _this.visit(node, options);
+      });
     };
 
     return BasicVisitor;
@@ -152,8 +163,13 @@
   nodeEditorTemplate = " <div class=\"editor\">\n    <input name=\"text\" type=\"text\" value=\"aaaa\">\n    <button class=\"changeText\">テキストの変更</button>\n    <button class=\"red\">赤</button>\n    <button class=\"blue\">青</button>\n</div>";
 
   $(function() {
-    var node;
+    var cnode, node;
+    cnode = new CompositeNode();
+    cnode.addNode(new TextLeafNode());
+    cnode.addNode(new TextLeafNode());
     node = new CompositeNode();
+    node.addNode(new TextLeafNode());
+    node.addNode(cnode);
     node.addNode(new TextLeafNode());
     return node.setup($('body'));
   });

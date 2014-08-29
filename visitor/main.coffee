@@ -16,7 +16,6 @@ class BasicNode
     @$el.css('backgroundColor', color)
 
 class TextLeafNode extends BasicNode
-
   setup: (@$parent)->
     @$el = $(textNodeTemplate).appendTo(@$parent)
     editor = new NodeEditor(@)
@@ -34,23 +33,25 @@ compositeNodeTemplate = """
 """
 
 class CompositeNode extends BasicNode
-
   constructor: ()->
     @nodes = []
 
+  forEach: (callback)->
+    @nodes.forEach(callback)
+
   accept: (visitor, options)->
-    @nodes.forEach (node)->
+    @forEach (node)->
       visitor.visit(node, options)
 
   setBackgroundColor: (color)->
     super(color)
-    @nodes.forEach (node)->
+    @forEach (node)->
       node.setBackgroundColor(color)
 
   setup: (@$parent)->
     @$el = $(compositeNodeTemplate).appendTo(@$parent)
-    @nodes.forEach (node)=>
-      $li = $('<li></li>').appendTo(@$el.find('ul'))
+    @forEach (node)=>
+      $li = $('<li></li>').appendTo(@$el.find('>ul'))
       node.setup($li)
 
     editor = new NodeEditor(@)
@@ -64,15 +65,16 @@ class BasicVisitor
     #ここを型（オーバーロード）で解決出来る方が良いけど本質ではない
     @['visit' + obj.constructor.name](obj, options)
 
+  visitCompositeNode: (compositeNode, options)->
+    compositeNode.forEach (node)=>
+      @visit(node, options)
+
 
 class TextEditVisitor extends BasicVisitor
-
   visitTextLeafNode: (textLeafNode, options)->
     textLeafNode.setText(options.text)
 
-
 class NodeEditor
-
   constructor: (@node)->
     @visitors =
       textEdit: new TextEditVisitor()
@@ -99,6 +101,12 @@ nodeEditorTemplate = """
 """
 
 $ ()->
+  cnode = new CompositeNode()
+  cnode.addNode(new TextLeafNode())
+  cnode.addNode(new TextLeafNode())
+
   node = new CompositeNode()
+  node.addNode(new TextLeafNode())
+  node.addNode(cnode)
   node.addNode(new TextLeafNode())
   node.setup($('body'))
