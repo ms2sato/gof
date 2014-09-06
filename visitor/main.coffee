@@ -1,30 +1,17 @@
 # 本当はモデルとビューを分けるんだろうけど複雑になって目標を見失うので
 # あえて分けません。本当は分けるんです。本当は。
 
-textNodeTemplate = """
-  <div class="node">
-      <div class="content text">テスト</div>
-  </div>
-"""
-
 class BasicNode
-  accept: (visitor, options)->
-    visitor.visit(@, options)
+  accept: (visitor, options, level)->
+    visitor.visit(@, options, level)
 
   # 全ての派生が持つと明瞭ならインターフェースで良い
   setBackgroundColor: (color)->
+    @backgroundColor = color
     @$el.css('backgroundColor', color)
 
-class TextLeafNode extends BasicNode
-  setup: (@$parent)->
-    @$el = $(textNodeTemplate).appendTo(@$parent)
-    editor = new NodeEditor(@)
-    editor.setup()
-
-  setText: (text)->
-    $textContent = @$el.find('.text.content')
-    $textContent.text(text)
-
+  getBackgroundColor: ()->
+    @backgroundColor
 
 compositeNodeTemplate = """
   <div class="node">
@@ -39,9 +26,13 @@ class CompositeNode extends BasicNode
   forEach: (callback)->
     @nodes.forEach(callback)
 
-  accept: (visitor, options)->
+  accept: (visitor, options, level)->
+    my_level =
+      value: if level?.value then level.value + 1 else 1
+
     @forEach (node)->
-      visitor.visit(node, options)
+      node.accept(visitor, options, my_level)
+
 
   setBackgroundColor: (color)->
     super(color)
@@ -60,27 +51,97 @@ class CompositeNode extends BasicNode
   addNode: (node)->
     @nodes.push(node)
 
-class BasicVisitor
-  visit: (obj, options)->
-    #ここを型（オーバーロード）で解決出来る方が良いけど本質ではない
-    @['visit' + obj.constructor.name](obj, options)
 
-  visitCompositeNode: (compositeNode, options)->
+textNodeTemplate = """
+  <div class="node">
+      <div class="content text">テスト</div>
+  </div>
+"""
+
+class TextLeafNode extends BasicNode
+  setup: (@$parent)->
+    @$el = $(textNodeTemplate).appendTo(@$parent)
+    editor = new NodeEditor(@)
+    editor.setup()
+
+  setText: (text)->
+    $textContent = @$el.find('.text.content')
+    $textContent.text(text)
+
+  getText: ->
+    $textContent = @$el.find('.text.content')
+    $textContent.text()
+
+hrNodeTemplate = """
+  <div class="node">
+      <hr class="content hr">
+  </div>
+"""
+
+class HrLeafNode extends BasicNode
+  setup: (@$parent)->
+    @$el = $(hrNodeTemplate).appendTo(@$parent)
+
+
+class BasicVisitor
+  visit: (obj, options, level)->
+    #ここを型（オーバーロード）で解決出来る方が良いけど本質ではない
+    method  = @['visit' + obj.constructor.name]
+    if method
+      method.call(@, obj, options, level)
+    else
+      unmatchedNode(obj, options, level)
+
+  visitCompositeNode: (compositeNode, options, level)->
     compositeNode.forEach (node)=>
-      @visit(node, options)
+      @visit(node, options, level)
+
+  unmachedNode: (obj, options, level)->
+    #nop
 
 
 class TextEditVisitor extends BasicVisitor
   visitTextLeafNode: (textLeafNode, options)->
     textLeafNode.setText(options.text)
 
+  visitHrLeafNode: (hrLeafNode, options)->
+    #nop
+
+class HTMLExportingVisitor extends BasicVisitor
+  constructor: ->
+    @content = ''
+
+  visitTextLeafNode: (textLeafNode, options)->
+    bg = textLeafNode.getBackgroundColor()
+    start = if bg then "<div style=\"background-color: #{bg}\">" else '<div>'
+    @content += start + textLeafNode.getText() + "</div>\n";
+
+  visitHrLeafNode: (hrLeafNode, options)->
+    @content += '<hr>\n'
+
+class TextExportingVisitor extends BasicVisitor
+  constructor: ->
+    @content = ''
+
+  visitTextLeafNode: (textLeafNode, options, level)->
+    @content += @getIndent(level) + textLeafNode.getText() + "\n";
+
+  visitHrLeafNode: (hrLeafNode, options, level)->
+    @content += @getIndent(level) + '--- \n'
+
+  getIndent:(level)->
+    indent = ''
+    for i in [1..level.value]
+      indent += '>'
+    indent
+
 class NodeEditor
-  constructor: (@node)->
+  constructor: (@node, @tpl = nodeEditorTemplate)->
     @visitors =
       textEdit: new TextEditVisitor()
 
   setup: ->
-    $editor = $(nodeEditorTemplate).appendTo(@node.$el)
+    $editor = $(@tpl).appendTo(@node.$el)
     $editor.find('.changeText').click ()=>
       $text = $editor.find('[name=text]')
       @node.accept @visitors.textEdit, text:$text.val()
@@ -104,9 +165,21 @@ $ ()->
   cnode = new CompositeNode()
   cnode.addNode(new TextLeafNode())
   cnode.addNode(new TextLeafNode())
+  cnode.addNode(new HrLeafNode())
+  cnode.addNode(new TextLeafNode())
 
   node = new CompositeNode()
   node.addNode(new TextLeafNode())
   node.addNode(cnode)
   node.addNode(new TextLeafNode())
-  node.setup($('body'))
+  node.setup($('#nodes'))
+
+  $('#actions .html').click ()->
+    htmlExporter = new HTMLExportingVisitor()
+    node.accept(htmlExporter, {})
+    $('#field').text htmlExporter.content
+
+  $('#actions .text').click ()->
+    textExporter = new TextExportingVisitor()
+    node.accept(textExporter, {})
+    $('#field').text textExporter.content
