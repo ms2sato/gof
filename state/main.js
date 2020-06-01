@@ -18,11 +18,10 @@ class StopWatch{
   }
 
   run() {
-    var _this = this;
     this.changeStatus(this.statuses.running);
-    this.timer = setInterval(function () {
-      _this.counter++;
-      _this.view.updateDisplay();
+    this.timer = setInterval(() => {
+      this.counter++;
+      this.view.updateDisplay();
     }, 100);
   }
 
@@ -39,8 +38,7 @@ class StopWatch{
   }
 
   lap() {
-    var lap;
-    lap = this.counter - this.lastLap;
+    const lap = this.counter - this.lastLap;
     this.lastLap = this.counter;
     this.view.addLap(lap);
   }
@@ -112,14 +110,13 @@ class RunningStatus {
 
 class StopWatchView {
   constructor(app, el) {
-    var _this = this;
     this.app = app;
     this.$el = $(el);
-    this.$('.buttons button.main').click(function (event) {
-      _this.app.clickedMainButton();
+    this.$('.buttons button.main').click( event => {
+      this.app.clickedMainButton();
     });
-    this.$('.buttons button.sub').click(function (event) {
-      _this.app.clickedSubButton();
+    this.$('.buttons button.sub').click( event => {
+      this.app.clickedSubButton();
     });
   }
 
@@ -128,7 +125,7 @@ class StopWatchView {
   }
 
   getButton(name) {
-    return this.$(".buttons button." + name);
+    return this.$(`.buttons button.${name}`);
   }
 
   decorateRunButton(name) {
@@ -156,7 +153,7 @@ class StopWatchView {
   }
 
   addLap(lap) {
-    $("<li>" + lap + "</li>").prependTo(this.$('.laps'));
+    $(`<li>${lap}</li>`).prependTo(this.$('.laps'));
   }
 
   clearLaps() {
@@ -169,8 +166,7 @@ class StopWatchView {
   }
 }
 
-$(function () {
-  var stopWatch;
-  stopWatch = new StopWatch();
+$(function () {  
+  const stopWatch = new StopWatch();
   stopWatch.setup($('.stopwatch'));
 });
